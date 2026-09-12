@@ -1,0 +1,17 @@
+{
+  "name": "hydro_solver",
+  "type": "module",
+  "description": "Steady-state hydronic (water heating) network solver compiled to WebAssembly",
+  "version": "0.1.0",
+  "license": "MIT",
+  "files": [
+    "hydro_solver_bg.wasm",
+    "hydro_solver.js",
+    "hydro_solver.d.ts"
+  ],
+  "main": "hydro_solver.js",
+  "types": "hydro_solver.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

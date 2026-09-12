@@ -1,0 +1,5 @@
+dist
+node_modules
+public/solver
+coverage
+package-lock.json

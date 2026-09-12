@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hydronic Designer — Slice Preview</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#11161f; --panel2:#0e131b; --line:#1e2733;
+    --txt:#c9d4e3; --muted:#69788c; --muted2:#48566a;
+    --blue:#2f6fed; --hot:#e5484d; --cold:#3b82f6; --ok:#3fb950;
+    --chip:#172033;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--txt);font:13px/1.4 "Segoe UI",system-ui,sans-serif}
+  .app{display:grid;grid-template-rows:auto auto 1fr 184px auto;height:100vh}
+
+  /* ---- menu + toolbar ---- */
+  .menubar{display:flex;align-items:center;gap:18px;padding:7px 12px;background:var(--panel2);border-bottom:1px solid var(--line)}
+  .menubar .logo{width:16px;height:16px;border-radius:4px;background:linear-gradient(135deg,#3b82f6,#7c3aed)}
+  .menubar .title{font-weight:600;letter-spacing:.2px}
+  .menubar .menu{display:flex;gap:16px;color:var(--muted);margin-left:8px}
+  .toolbar{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .tbtn{width:26px;height:26px;border:1px solid var(--line);border-radius:6px;background:#0f141d;color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:13px}
+  .sep{width:1px;height:20px;background:var(--line);margin:0 2px}
+  .run{display:flex;align-items:center;gap:6px;background:var(--blue);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-weight:600;font-size:12px}
+  .stop{display:flex;align-items:center;gap:6px;background:#0f141d;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px}
+  .ddown{background:#0f141d;border:1px solid var(--line);border-radius:6px;padding:6px 10px;color:var(--txt);font-size:12px}
+
+  /* ---- 3 column main ---- */
+  .main{display:grid;grid-template-columns:212px 1fr 244px;overflow:hidden}
+  .col{background:var(--panel);overflow:auto}
+  .palette{border-right:1px solid var(--line);padding:10px}
+  .right{border-left:1px solid var(--line);padding:12px}
+  .phdr{font-size:11px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin:2px 0 8px}
+  .search{width:100%;background:#0e131b;border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--muted);font-size:12px;margin-bottom:10px}
+  .cat{font-size:11px;letter-spacing:.4px;color:var(--muted2);text-transform:uppercase;margin:12px 0 6px;display:flex;justify-content:space-between}
+  .cat.active{color:#7fa9ff}
+  .items{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .item{background:#0e131b;border:1px solid var(--line);border-radius:6px;padding:8px 6px;text-align:center;color:var(--muted);font-size:11px}
+  .item.use{border-color:#2f6fed;color:#cfe0ff;background:#11203a;box-shadow:0 0 0 1px #1f3f78 inset}
+  .item .ic{font-size:16px;display:block;margin-bottom:3px}
+  .dim{opacity:.42}
+
+  /* ---- canvas ---- */
+  .canvas{position:relative;background:
+      radial-gradient(circle at 1px 1px,#16202e 1px,transparent 0) 0 0/22px 22px,
+      var(--panel2);overflow:hidden}
+  .canvas .badge{position:absolute;top:10px;left:12px;background:#0e131b;border:1px solid var(--line);border-radius:6px;padding:4px 9px;color:var(--muted);font-size:11px;z-index:3}
+  .canvas .badge b{color:#7fa9ff}
+  .lbl{position:absolute;font-size:11px;font-weight:600;padding:1px 5px;border-radius:4px;background:#0b0e14cc}
+  .lbl.h{color:#ff9a9d;border:1px solid #5b2a2c}
+  .lbl.c{color:#9ec3ff;border:1px solid #25406b}
+  .cap{position:absolute;font-size:11px;color:var(--muted);text-align:center;transform:translateX(-50%)}
+  .cap b{color:var(--txt);display:block;font-weight:600;font-size:12px}
+
+  /* ---- right results ---- */
+  .resgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .stat{background:#0e131b;border:1px solid var(--line);border-radius:8px;padding:9px}
+  .stat .k{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .stat .v{font-size:16px;font-weight:700;margin-top:3px}
+  .stat .v small{font-size:10px;color:var(--muted);font-weight:500}
+  .legend .row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:11px;color:var(--muted)}
+  .grad{height:10px;border-radius:5px;flex:1;background:linear-gradient(90deg,#2b6fe0,#15b3c6,#3fb950,#e3c93f,#e5484d)}
+  .swatch{width:22px;height:3px;border-radius:2px}
+
+  /* ---- bottom charts ---- */
+  .bottom{background:var(--panel);border-top:1px solid var(--line);display:grid;grid-template-rows:auto 1fr}
+  .tabs{display:flex;gap:2px;padding:6px 10px 0;border-bottom:1px solid var(--line)}
+  .tab{padding:6px 12px;font-size:12px;color:var(--muted);border-bottom:2px solid transparent}
+  .tab.active{color:#cfe0ff;border-bottom-color:var(--blue)}
+  .charts{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;padding:10px 14px;overflow:hidden}
+  .chart h4{margin:0 0 4px;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .clegend{display:flex;gap:14px;font-size:10px;color:var(--muted);margin-top:2px}
+  .dot{display:inline-block;width:8px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+  /* ---- status bar ---- */
+  .status{display:flex;align-items:center;gap:18px;padding:5px 14px;background:var(--panel2);border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+  .status .ok{color:var(--ok)}
+  .status .right{margin-left:auto;display:flex;gap:18px}
+
+  /* ---- approval options ---- */
+  .ask{padding:12px 14px;background:var(--panel2);border-top:1px solid var(--line)}
+  .ask h3{margin:0 0 8px;font-size:12px;color:var(--txt)}
+  .opts{display:flex;gap:10px}
+  .opt{flex:1;background:#0e131b;border:1px solid var(--line);border-radius:8px;padding:10px;cursor:pointer;transition:.12s}
+  .opt:hover{border-color:#33425a}
+  .opt.selected{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue) inset;background:#11203a}
+  .opt .L{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;border-radius:5px;background:#1b2740;color:#9ec3ff;font-weight:700;font-size:11px;margin-bottom:6px}
+  .opt b{display:block;font-size:12px;margin-bottom:2px}
+  .opt p{margin:0;font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- menu -->
+  <div class="menubar">
+    <div class="logo"></div>
+    <div class="title">Hydronic System Designer &amp; Simulator</div>
+    <div class="menu"><span>File</span><span>Edit</span><span>View</span><span>Project</span><span>Simulation</span><span>Tools</span><span>Help</span></div>
+  </div>
+
+  <!-- toolbar -->
+  <div class="toolbar">
+    <div class="tbtn">📄</div><div class="tbtn">📂</div><div class="tbtn">💾</div>
+    <div class="sep"></div>
+    <div class="tbtn">↶</div><div class="tbtn">↷</div>
+    <div class="sep"></div>
+    <div class="tbtn">⌖</div><div class="tbtn">＋</div>
+    <div class="sep"></div>
+    <div class="tbtn">－</div><div class="tbtn">＋</div><div class="tbtn">⤢</div>
+    <div class="sep"></div>
+    <button class="run">▶ Run Simulation</button>
+    <button class="stop">■ Stop</button>
+    <select class="ddown"><option>Steady State</option></select>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <div class="tbtn">📈</div><div class="tbtn">📷</div><div class="tbtn">⚙</div>
+    </div>
+  </div>
+
+  <!-- main 3 col -->
+  <div class="main">
+
+    <!-- palette -->
+    <div class="col palette">
+      <div class="phdr">Component Library</div>
+      <input class="search" placeholder="Search components…">
+      <div class="cat active">Heat Sources <span>▾</span></div>
+      <div class="items">
+        <div class="item use"><span class="ic">🔥</span>Boiler</div>
+        <div class="item dim"><span class="ic">❄</span>Heat Pump</div>
+      </div>
+      <div class="cat active">Pumps <span>▾</span></div>
+      <div class="items">
+        <div class="item use"><span class="ic">⊚</span>Circulator</div>
+        <div class="item dim"><span class="ic">⊚</span>Group</div>
+      </div>
+      <div class="cat active">Heat Consumers <span>▾</span></div>
+      <div class="items">
+        <div class="item use"><span class="ic">▤</span>Radiator</div>
+        <div class="item dim"><span class="ic">≋</span>Underfloor</div>
+      </div>
+      <div class="cat active">Pipes &amp; Fittings <span>▾</span></div>
+      <div class="items">
+        <div class="item use"><span class="ic">━</span>Pipe</div>
+        <div class="item dim"><span class="ic">┓</span>Elbow</div>
+        <div class="item dim"><span class="ic">┳</span>Tee</div>
+        <div class="item dim"><span class="ic">⊟</span>Reducer</div>
+      </div>
+      <div class="cat">Tanks &amp; Buffers</div>
+      <div class="cat">Hydraulic Separators</div>
+      <div class="cat">Manifolds</div>
+      <div class="cat">Valves</div>
+      <div class="cat">Safety Components</div>
+      <div class="cat">Sensors &amp; Meters</div>
+      <div class="cat">Controllers</div>
+      <div style="margin-top:14px;font-size:10px;color:var(--muted2);border-top:1px dashed var(--line);padding-top:8px">
+        <span style="color:#7fa9ff">▮ Highlighted</span> = in this slice ·
+        dimmed/plain = later sub-projects
+      </div>
+    </div>
+
+    <!-- canvas -->
+    <div class="col canvas">
+      <div class="badge">Slice loop: <b>Boiler → Circulator → Radiator</b> · supply (hot) + return (cold) · solves for real</div>
+
+      <svg width="100%" height="100%" viewBox="0 0 660 420" preserveAspectRatio="xMidYMid meet" style="position:absolute;inset:0">
+        <defs>
+          <marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#e5484d"/></marker>
+          <marker id="ac" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill="#3b82f6"/></marker>
+        </defs>
+
+        <!-- supply (hot/red): boiler top -> up -> right -> pump in; pump out -> right -> radiator top -->
+        <path d="M120,150 V96 H300" fill="none" stroke="#e5484d" stroke-width="5" marker-end="url(#ah)"/>
+        <path d="M348,96 H520 V150" fill="none" stroke="#e5484d" stroke-width="5" marker-end="url(#ah)"/>
+        <!-- return (cold/blue): radiator bottom -> down -> left -> boiler bottom -->
+        <path d="M560,250 V330 H120 V250" fill="none" stroke="#3b82f6" stroke-width="5" marker-end="url(#ac)"/>
+
+        <!-- boiler -->
+        <rect x="80" y="150" width="80" height="120" rx="6" fill="#131a24" stroke="#33425a"/>
+        <text x="120" y="206" text-anchor="middle" font-size="26">🔥</text>
+
+        <!-- pump -->
+        <circle cx="324" cy="96" r="24" fill="#131a24" stroke="#33425a"/>
+        <circle cx="324" cy="96" r="9" fill="none" stroke="#7fa9ff" stroke-width="2"/>
+        <path d="M324,96 L332,90" stroke="#7fa9ff" stroke-width="2"/>
+
+        <!-- radiator -->
+        <rect x="500" y="150" width="120" height="100" rx="6" fill="#131a24" stroke="#33425a"/>
+        <g stroke="#33425a" stroke-width="2">
+          <line x1="516" y1="160" x2="516" y2="240"/><line x1="532" y1="160" x2="532" y2="240"/>
+          <line x1="548" y1="160" x2="548" y2="240"/><line x1="564" y1="160" x2="564" y2="240"/>
+          <line x1="580" y1="160" x2="580" y2="240"/><line x1="596" y1="160" x2="596" y2="240"/>
+        </g>
+      </svg>
+
+      <div class="lbl h" style="left:172px;top:74px">70.0 °C</div>
+      <div class="lbl h" style="left:430px;top:74px">68.7 °C</div>
+      <div class="lbl c" style="left:300px;top:336px">50.0 °C</div>
+      <div class="cap" style="left:158px;top:290px"><b>Gas Boiler</b>24 kW</div>
+      <div class="cap" style="left:324px;top:140px"><b>Circulator</b>1.03 m³/h</div>
+      <div class="cap" style="left:560px;top:270px"><b>Radiator</b>24 kW @ ΔT50</div>
+    </div>
+
+    <!-- right results -->
+    <div class="col right">
+      <div class="phdr">Simulation Results</div>
+      <div class="resgrid">
+        <div class="stat"><div class="k">Total Flow</div><div class="v">1.03 <small>m³/h</small></div></div>
+        <div class="stat"><div class="k">Pump Head</div><div class="v">34.8 <small>kPa</small></div></div>
+        <div class="stat"><div class="k">Supply Temp</div><div class="v" style="color:#ff9a9d">70.0 <small>°C</small></div></div>
+        <div class="stat"><div class="k">Return Temp</div><div class="v" style="color:#9ec3ff">50.0 <small>°C</small></div></div>
+        <div class="stat"><div class="k">Delta T</div><div class="v">20.0 <small>K</small></div></div>
+        <div class="stat"><div class="k">Heat Output</div><div class="v">24.0 <small>kW</small></div></div>
+      </div>
+      <div class="phdr">Legend</div>
+      <div class="legend">
+        <div class="row"><span>Temperature</span><div class="grad"></div></div>
+        <div class="row" style="justify-content:space-between;color:var(--muted2)"><span>0</span><span>40</span><span>80 °C</span></div>
+        <div class="row"><span class="swatch" style="background:#e5484d"></span> Supply (hot)</div>
+        <div class="row"><span class="swatch" style="background:#3b82f6"></span> Return (cold)</div>
+        <div class="row"><span style="font-size:13px">→</span> Flow direction</div>
+      </div>
+      <div class="phdr" style="margin-top:14px">Energy Balance</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.7">
+        Boiler in <b style="color:#ff9a9d">24.0 kW</b><br>
+        Radiator out <b style="color:#9ec3ff">24.0 kW</b><br>
+        ṁ = Q / (cp·ΔT) → <b style="color:var(--txt)">1.03 m³/h</b>
+      </div>
+    </div>
+  </div>
+
+  <!-- bottom charts -->
+  <div class="bottom">
+    <div class="tabs">
+      <div class="tab">System Overview</div>
+      <div class="tab active">Charts</div>
+      <div class="tab">Table Data</div>
+      <div class="tab">Energy Balance</div>
+      <div class="tab">Pump Curves</div>
+    </div>
+    <div class="charts">
+      <div class="chart">
+        <h4>Supply &amp; Return Temperature — solver convergence</h4>
+        <svg width="100%" height="96" viewBox="0 0 520 96" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="520" y2="20" stroke="#1e2733"/>
+          <line x1="0" y1="50" x2="520" y2="50" stroke="#1e2733"/>
+          <line x1="0" y1="80" x2="520" y2="80" stroke="#1e2733"/>
+          <path d="M0,86 C90,40 150,26 250,22 S420,20 520,20" fill="none" stroke="#e5484d" stroke-width="2.5"/>
+          <path d="M0,90 C90,72 150,60 250,54 S420,50 520,50" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+        </svg>
+        <div class="clegend">
+          <span><span class="dot" style="background:#e5484d"></span>Supply →70.0°C</span>
+          <span><span class="dot" style="background:#3b82f6"></span>Return →50.0°C</span>
+          <span style="margin-left:auto">iterations 0 → 14</span>
+        </div>
+      </div>
+      <div class="chart">
+        <h4>Heat Output</h4>
+        <svg width="100%" height="96" viewBox="0 0 320 96" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="320" y2="20" stroke="#1e2733"/>
+          <line x1="0" y1="50" x2="320" y2="50" stroke="#1e2733"/>
+          <line x1="0" y1="80" x2="320" y2="80" stroke="#1e2733"/>
+          <path d="M0,92 C70,60 120,30 200,26 S280,24 320,24 L320,96 L0,96 Z" fill="#7c3aed33" stroke="#9a6bf0" stroke-width="2"/>
+        </svg>
+        <div class="clegend"><span><span class="dot" style="background:#9a6bf0"></span>Total → 24.0 kW</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- status -->
+  <div class="status">
+    <span>Project: Example House</span><span>Units: SI</span><span>Steady State</span>
+    <div class="right">
+      <span class="ok">✔ Solver: Converged</span><span>Iterations: 14</span><span>Elapsed: 0.06 s</span>
+    </div>
+  </div>
+
+  <!-- approval -->
+  <div class="ask">
+    <h3>This is the slice target — full app shell, one loop that actually solves (real flow + energy balance). Look right?</h3>
+    <div class="opts">
+      <div class="opt" data-choice="a" onclick="selectOpt(this)">
+        <span class="L">A</span><b>Yes — this is the target</b><p>Proceed: finish design, then plan + build.</p>
+      </div>
+      <div class="opt" data-choice="b" onclick="selectOpt(this)">
+        <span class="L">B</span><b>Layout / look needs tweaks</b><p>Adjust panels, colors, arrangement.</p>
+      </div>
+      <div class="opt" data-choice="c" onclick="selectOpt(this)">
+        <span class="L">C</span><b>Different slice loop</b><p>Swap boiler/radiator for other first components.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  function selectOpt(el){
+    el.parentNode.querySelectorAll('.opt').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+    try{ if(window.toggleSelect) window.toggleSelect(el); }catch(e){}
+  }
+</script>
+</body>
+</html>

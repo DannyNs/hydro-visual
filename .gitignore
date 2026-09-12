@@ -1,0 +1,157 @@
+# =========================
+
+# Rust / Tauri
+
+# =========================
+
+# Rust build artifacts
+
+target/
+**/target/
+
+# Tauri build artifacts
+
+src-tauri/target/
+app/src-tauri/target/
+
+# Tauri generated files
+
+src-tauri/gen/
+app/src-tauri/gen/
+
+# Rust / Cargo
+
+Cargo.lock
+
+# ^ Usuń tę linię, jeśli tworzysz aplikację binarną i chcesz
+
+# wersjonować Cargo.lock (dla Tauri desktop zwykle WARTO go wersjonować).
+
+# =========================
+
+# Node / JavaScript
+
+# =========================
+
+node_modules/
+**/node_modules/
+
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+bun-debug.log*
+
+.npm/
+.yarn/
+.pnpm-store/
+
+# Package manager caches
+
+.cache/
+.parcel-cache/
+.vite/
+
+# =========================
+
+# Frontend build
+
+# =========================
+
+dist/
+build/
+out/
+**/dist/
+**/build/
+**/out/
+
+# =========================
+
+# Environment / secrets
+
+# =========================
+
+.env
+.env.*
+!.env.example
+!.env.template
+
+# =========================
+
+# IDE / editors
+
+# =========================
+
+.vscode/
+.idea/
+
+# Zed
+
+.zed/
+
+# =========================
+
+# OS
+
+# =========================
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# =========================
+
+# Logs
+
+# =========================
+
+*.log
+logs/
+
+# =========================
+
+# Temporary files
+
+# =========================
+
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+*.bak
+
+# Windows reserved-name artifacts
+
+# Important for Windows / Git
+
+nul
+**/nul
+
+# =========================
+
+# Tauri generated / local
+
+# =========================
+
+# Tauri updater artifacts
+
+*.sig
+
+# =========================
+
+# Coverage / testing
+
+# =========================
+
+coverage/
+.nyc_output/
+
+# =========================
+
+# Misc
+
+# =========================
+
+.DS_Store
+*.local
+EOF
